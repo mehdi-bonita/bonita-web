@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.bonitasoft.engine.api.CommandAPI;
+import org.bonitasoft.engine.bpm.businessdata.BusinessDataQueryMetadata;
+import org.bonitasoft.engine.bpm.businessdata.BusinessDataQueryResult;
 import org.bonitasoft.engine.command.CommandExecutionException;
 import org.bonitasoft.engine.command.CommandNotFoundException;
 import org.bonitasoft.engine.command.CommandParameterizationException;
@@ -37,13 +39,22 @@ public class BusinessDataQueryResource extends CommonResource {
         final Map<String, Serializable> parameters = new HashMap<String, Serializable>();
         final Integer searchPageNumber = getSearchPageNumber();
         final Integer searchPageSize = getSearchPageSize();
+
         parameters.put("queryName", getQueryParameter(true));
         parameters.put("queryParameters", (Serializable) getSearchFilters());
         parameters.put("entityClassName", getPathParam("className"));
         parameters.put("startIndex", searchPageNumber * searchPageSize);
         parameters.put("maxResults", searchPageSize);
         parameters.put("businessDataURIPattern", BusinessDataFieldValue.URI_PATTERN);
-        return commandAPI.execute(COMMAND_NAME, parameters);
+
+        BusinessDataQueryResult businessDataQueryResult = (BusinessDataQueryResult) commandAPI.execute(COMMAND_NAME, parameters);
+
+        final BusinessDataQueryMetadata businessDataQueryMetadata = businessDataQueryResult.getBusinessDataQueryMetadata();
+        if (businessDataQueryMetadata != null) {
+            setContentRange(businessDataQueryMetadata.getStartIndex(), businessDataQueryMetadata.getMaxResults(), businessDataQueryMetadata.getCountResults());
+        }
+
+        return businessDataQueryResult.getJsonResults();
     }
 
 }
